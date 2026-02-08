@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Luminu Mobile</title>
+<style>
+  body { margin:0; background:black; overflow:hidden; touch-action:none; }
+  canvas { display:block; }
+
+  .btn {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(0,200,255,0.3);
+    border: 2px solid cyan;
+    color: white;
+    font-size: 12px;
+  }
+
+  #destello { right: 20px; bottom: 180px; }
+  #escudo   { right: 100px; bottom: 100px; }
+  #pulso    { right: 20px; bottom: 100px; }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<button class="btn" id="destello">Destello</button>
+<button class="btn" id="escudo">Escudo</button>
+<button class="btn" id="pulso">Pulso</button>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+// 🔹 LUMINU 🔹
+let luminu = {
+  x: canvas.width/2,
+  y: canvas.height/2,
+  r: 20,
+  speed: 3,
+  shield: false
+};
+
+let effects = [];
+
+// 🕹️ JOYSTICK
+let joystick = {
+  active:false,
+  startX:0,
+  startY:0,
+  dx:0,
+  dy:0
+};
+
+canvas.addEventListener("touchstart", e=>{
+  let t = e.touches[0];
+  if (t.clientX < canvas.width/2) {
+    joystick.active = true;
+    joystick.startX = t.clientX;
+    joystick.startY = t.clientY;
+  }
+});
+
+canvas.addEventListener("touchmove", e=>{
+  if (!joystick.active) return;
+  let t = e.touches[0];
+  joystick.dx = t.clientX - joystick.startX;
+  joystick.dy = t.clientY - joystick.startY;
+});
+
+canvas.addEventListener("touchend", ()=>{
+  joystick.active = false;
+  joystick.dx = joystick.dy = 0;
+});
+
+// ✨ HABILIDADES ✨
+function destello(){
+  effects.push({type:"flash", time:15});
+}
+function escudo(){
+  luminu.shield = true;
+  setTimeout(()=>luminu.shield=false, 3000);
+}
+function pulso(){
+  effects.push({type:"pulse", r:0});
+}
+
+destelloBtn.onclick = destello;
+escudoBtn.onclick = escudo;
+pulsoBtn.onclick = pulso;
+
+// 🔁 LOOP 🔁
+function update(){
+  luminu.x += joystick.dx * 0.03;
+  luminu.y += joystick.dy * 0.03;
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Luminu
+  ctx.beginPath();
+  ctx.arc(luminu.x, luminu.y, luminu.r, 0, Math.PI*2);
+  ctx.fillStyle = "white";
+  ctx.fill();
+
+  // Escudo
+  if (luminu.shield){
+    ctx.beginPath();
+    ctx.arc(luminu.x, luminu.y, luminu.r+10, 0, Math.PI*2);
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
+
+  // Efectos
+  effects.forEach((e,i)=>{
+    if (e.type==="flash"){
+      ctx.fillStyle="rgba(255,255,255,0.3)";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      e.time--;
+      if (e.time<=0) effects.splice(i,1);
+    }
+    if (e.type==="pulse"){
+      ctx.beginPath();
+      ctx.arc(luminu.x, luminu.y, e.r, 0, Math.PI*2);
+      ctx.strokeStyle="blue";
+      ctx.lineWidth=3;
+      ctx.stroke();
+      e.r+=8;
+      if (e.r>300) effects.splice(i,1);
+    }
+  });
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
